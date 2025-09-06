@@ -6,6 +6,7 @@ import AlertCard from '@/components/dashboard/alert-card';
 import AnalysisCard from '@/components/dashboard/analysis-card';
 import ActionStatusCard from '@/components/dashboard/action-status-card';
 import { mockAlert, type Alert } from '@/lib/data';
+import { runIntelliOpsAgent } from '@/ai/flows/run-intelliops-agent';
 
 export type WorkflowState = 'idle' | 'analyzing' | 'awaiting-approval' | 'executing' | 'completed';
 export type ActionResult = 'success' | 'failure' | 'rejected' | null;
@@ -25,14 +26,24 @@ export default function Home() {
   }, []);
 
   const handleAnalyze = async () => {
+    if (!alert) return;
     setWorkflowState('analyzing');
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setAnalysisResult({
-      analysis: 'The high CPU utilization is caused by the `data-cruncher.py` script, which appears to be stuck in an infinite loop. This is a known issue documented in our knowledge base article KB-4592.',
-      suggestedAction: 'Run script "restart-service.sh" on web-server-01.',
-      reasoning: 'Restarting the service will terminate the runaway process and restore normal operation. This is the standard procedure for this type of incident, minimizing downtime.',
-    });
-    setWorkflowState('awaiting-approval');
+    try {
+      const result = await runIntelliOpsAgent({
+        alertTitle: alert.title,
+        alertDescription: alert.description,
+      });
+      setAnalysisResult({
+        analysis: result.analysis,
+        suggestedAction: result.suggestedAction,
+        reasoning: result.reasoning,
+      });
+      setWorkflowState('awaiting-approval');
+    } catch (error) {
+      console.error('Error running IntelliOps agent:', error);
+      // Handle error state in UI if needed
+      setWorkflowState('idle');
+    }
   };
 
   const handleApprove = async () => {
