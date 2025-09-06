@@ -61,6 +61,22 @@ const runDiagnosticScript = ai.defineTool(
   }
 );
 
+const restartProcess = ai.defineTool(
+  {
+    name: 'restartProcess',
+    description: 'Restarts a specific process or service on an asset.',
+    inputSchema: z.object({
+      processName: z.string().describe('The name of the process to restart (e.g., "data-cruncher.py").'),
+      justification: z.string().describe('Why this process should be restarted.'),
+    }),
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    return `Restarting process "${input.processName}" on the asset.`;
+  }
+);
+
+
 const escalateToHuman = ai.defineTool(
   {
     name: 'escalateToHuman',
@@ -92,7 +108,7 @@ export async function runIntelliOpsAgentWithTools(
       const prompt = `You are IntelliOps, an autonomous AI agent for IT Operations. Your goal is to resolve issues efficiently and safely.
   
       Analyze the following alert. Based on the information and the provided knowledge base context, determine the most appropriate next step.
-      Your available actions are to deploy a patch, run a diagnostic script, or escalate to a human. You must choose only one action.
+      Your available actions are to deploy a patch, run a diagnostic script, restart a process, or escalate to a human. You must choose only one action.
   
       Alert Title: ${input.alert.title}
       Alert Description: ${input.alert.description}
@@ -102,7 +118,7 @@ export async function runIntelliOpsAgentWithTools(
       const { output } = await ai.generate({
         prompt,
         model: 'googleai/gemini-1.5-pro-001',
-        tools: [deployPatch, runDiagnosticScript, escalateToHuman],
+        tools: [deployPatch, runDiagnosticScript, restartProcess, escalateToHuman],
         output: {
           schema: RunIntelliOpsAgentWithToolsOutputSchema,
           format: 'json',
@@ -118,6 +134,7 @@ export async function runIntelliOpsAgentWithTools(
         justification: output.reasoning,
         payload: { 
           scriptName: output.suggestedAction === 'runDiagnosticScript' ? 'diagnostic.sh' : undefined,
+          processName: output.suggestedAction === 'restartProcess' ? 'data-cruncher.py' : undefined,
           details: output.reasoning 
         }
       }, input.alert);

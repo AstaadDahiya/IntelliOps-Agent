@@ -2,12 +2,13 @@ import axios from 'axios';
 import { type Alert } from '@/lib/data';
 
 interface AIResponse {
-  action: 'DEPLOY_PATCH' | 'RUN_DIAGNOSTIC_SCRIPT' | 'ESCALATE' | string;
+  action: 'DEPLOY_PATCH' | 'RUN_DIAGNOSTIC_SCRIPT' | 'RESTART_PROCESS' | 'ESCALATE' | string;
   justification: string;
   payload: {
     scriptName?: string;
     details?: string;
     patchName?: string;
+    processName?: string;
   };
 }
 
@@ -19,7 +20,10 @@ export async function executeSuperOpsAction(
   const apiEndpoint = process.env.SUPER_OPS_API_ENDPOINT;
 
   if (!apiKey || !apiEndpoint) {
-    throw new Error('SuperOps API credentials are not configured.');
+    console.warn('SuperOps API credentials are not configured. Simulating API call.');
+    const message = `Simulated action: ${aiResponse.action}. Justification: ${aiResponse.justification}`;
+    console.log(message);
+    return message;
   }
 
   const headers = {
@@ -54,6 +58,18 @@ export async function executeSuperOpsAction(
         );
         return 'Diagnostic script started successfully.';
 
+      case 'RESTART_PROCESS':
+        console.log(`Restarting process: ${aiResponse.payload.processName}`);
+        await axios.post(
+          `${apiEndpoint}/processes/restart`,
+          {
+            assetId: alert.assetId,
+            processName: aiResponse.payload.processName,
+          },
+          { headers }
+        );
+        return `Process ${aiResponse.payload.processName} restarted successfully.`;
+        
       case 'ESCALATE':
         console.log('Escalating ticket...');
         await axios.put(
