@@ -31,5 +31,15 @@ export const mockAlerts: Alert[] = [
     severity: 'High',
     timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     source: 'SuperOps',
+  },
+  {
+    id: 'ALT-24680',
+    assetId: 'ASSET-K8S-POD-01',
+    ticketId: 'TICK-54321',
+    title: 'Unresponsive Application Pod',
+    description: 'The pod "payment-gateway-xyz" in the production Kubernetes cluster is not responding to health checks. It may need to be restarted.',
+    severity: 'High',
+    timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    source: 'SuperOps',
   }
 ]

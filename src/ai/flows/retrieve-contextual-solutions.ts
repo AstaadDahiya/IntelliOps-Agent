@@ -45,7 +45,8 @@ const retrieveContextualSolutionsFlow = ai.defineFlow(
         "For high CPU on web servers, first check the 'data-cruncher.py' process. If it's running, consider restarting it using 'systemctl restart data-cruncher'.",
         "If a server is unresponsive, a common solution is to run the 'network-diagnostic.sh' script to check for connectivity issues.",
         "When 'data-cruncher.py' exceeds 90% CPU, it's a known issue that requires patch 'PATCH-CPU-001' to be deployed.",
-        "Database connection errors are often linked to network ACLs or firewall rules. The 'network-diagnostic.sh' script can help identify blocked ports."
+        "Database connection errors are often linked to network ACLs or firewall rules. The 'network-diagnostic.sh' script can help identify blocked ports.",
+        "For unresponsive Kubernetes pods, check the pod logs for errors first. If no errors are apparent, a restart of the pod often resolves the issue. The associated process name would be the application running inside the pod."
     ];
     
     const solutions = "### Relevant Knowledge Base Articles:\n" + knowledgeBase.join("\n\n");
