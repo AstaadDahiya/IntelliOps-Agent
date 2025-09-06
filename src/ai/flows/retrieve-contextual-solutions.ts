@@ -31,21 +31,24 @@ export async function retrieveContextualSolutions(
   return retrieveContextualSolutionsFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'retrieveContextualSolutionsPrompt',
-  input: {schema: RetrieveContextualSolutionsInputSchema},
-  output: {schema: RetrieveContextualSolutionsOutputSchema},
-  prompt: `You are an expert IT operator. Based on the analyzed alert, retrieve relevant solutions from the knowledge base using RAG to help resolve the issue effectively.\n\nAnalyzed Alert: {{{alertAnalysis}}}\n\nSolutions:`,
-});
-
+// This is a placeholder for a real RAG implementation.
+// In a real application, you would use the input to search a vector database.
 const retrieveContextualSolutionsFlow = ai.defineFlow(
   {
     name: 'retrieveContextualSolutionsFlow',
     inputSchema: RetrieveContextualSolutionsInputSchema,
     outputSchema: RetrieveContextualSolutionsOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    // Placeholder for vector search logic
+    const knowledgeBase = [
+        "For high CPU on web servers, first check the 'data-cruncher.py' process. If it's running, consider restarting it using 'systemctl restart data-cruncher'.",
+        "If a server is unresponsive, a common solution is to run the 'network-diagnostic.sh' script to check for connectivity issues.",
+        "When 'data-cruncher.py' exceeds 90% CPU, it's a known issue that requires patch 'PATCH-CPU-001' to be deployed."
+    ];
+    
+    const solutions = "### Relevant Knowledge Base Articles:\n" + knowledgeBase.join("\n\n");
+
+    return { solutions };
   }
 );

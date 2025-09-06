@@ -43,10 +43,13 @@ const runIntelliOpsAgentFlow = ai.defineFlow(
     outputSchema: RunIntelliOpsAgentOutputSchema,
   },
   async (input) => {
-    // For now, we are passing a dummy analysis to retrieve contextual solutions.
-    // This will be updated in a future step.
+    // First, we need an initial analysis to search for solutions
+    const initialAnalysis = await ai.generate({
+      prompt: `Briefly analyze this alert for keywords: ${input.alertTitle} - ${input.alertDescription}`
+    });
+    
     const contextualSolutions = await retrieveContextualSolutions({
-      alertAnalysis: 'High CPU utilization on web-server-01',
+      alertAnalysis: initialAnalysis.text,
     });
 
     const analysisResult = await analyzeAlertAndSuggestAction({
