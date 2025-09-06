@@ -6,8 +6,8 @@ import AlertCard from '@/components/dashboard/alert-card';
 import AnalysisCard from '@/components/dashboard/analysis-card';
 import ActionStatusCard from '@/components/dashboard/action-status-card';
 import { mockAlert, type Alert } from '@/lib/data';
-import { runIntelliOpsAgentWithTools } from '@/ai/flows/run-intelliops-agent-with-tools';
-import { retrieveContextualSolutions } from '@/ai/flows/retrieve-contextual-solutions';
+import { runIntelliOpsAgent } from '@/ai/flows/run-intelliops-agent';
+import { useToast } from '@/hooks/use-toast';
 
 export type WorkflowState = 'idle' | 'analyzing' | 'awaiting-approval' | 'executing' | 'completed';
 export type ActionResult = 'success' | 'failure' | 'rejected' | null;
@@ -17,8 +17,11 @@ export default function Home() {
   const [workflowState, setWorkflowState] = useState<WorkflowState>('idle');
   const [analysisResult, setAnalysisResult] = useState<any | null>(null);
   const [actionResult, setActionResult] = useState<ActionResult>(null);
+  const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
+    setIsClient(true);
     const timer = setTimeout(() => {
       setAlert(mockAlert);
       setWorkflowState('idle')
@@ -30,12 +33,9 @@ export default function Home() {
     if (!alert) return;
     setWorkflowState('analyzing');
     try {
-      const contextualSolutions = await retrieveContextualSolutions({
-        alertAnalysis: 'High CPU utilization on web-server-01',
-      });
-      const result = await runIntelliOpsAgentWithTools({
-        alert: alert,
-        knowledgeBaseResults: contextualSolutions.solutions,
+      const result = await runIntelliOpsAgent({
+        alertTitle: alert.title,
+        alertDescription: alert.description,
       });
       setAnalysisResult({
         analysis: result.analysis,
@@ -45,13 +45,18 @@ export default function Home() {
       setWorkflowState('awaiting-approval');
     } catch (error) {
       console.error('Error running IntelliOps agent:', error);
-      // Handle error state in UI if needed
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "The AI agent failed to process the alert. Please try again.",
+      });
       setWorkflowState('idle');
     }
   };
 
   const handleApprove = async () => {
     setWorkflowState('executing');
+    // This is a placeholder for the actual API call
     await new Promise(resolve => setTimeout(resolve, 4000));
     const success = Math.random() > 0.2; // Simulate success/failure
     setActionResult(success ? 'success' : 'failure');
@@ -62,6 +67,21 @@ export default function Home() {
     setActionResult('rejected');
     setWorkflowState('completed');
   };
+  
+  const handleReset = () => {
+    setAlert(null);
+    setAnalysisResult(null);
+    setActionResult(null);
+    setWorkflowState('idle');
+    const timer = setTimeout(() => {
+      setAlert(mockAlert);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -85,6 +105,7 @@ export default function Home() {
             <ActionStatusCard 
               workflowState={workflowState}
               actionResult={actionResult}
+              onReset={handleReset}
             />
           </div>
         </div>

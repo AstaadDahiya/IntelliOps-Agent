@@ -2,18 +2,21 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { AlertCircle, Bot, CheckCircle2, Hourglass, Loader2, Terminal, XCircle } from "lucide-react";
+import { AlertCircle, Bot, CheckCircle2, Hourglass, Loader2, RefreshCw, Terminal, XCircle } from "lucide-react";
 import type { WorkflowState, ActionResult } from "@/app/page";
 import React from "react";
 
 type ActionStatusCardProps = {
   workflowState: WorkflowState;
   actionResult: ActionResult;
+  onReset: () => void;
 };
 
 const StatusItem = ({ 
@@ -48,7 +51,7 @@ const StatusItem = ({
   )
 };
 
-export default function ActionStatusCard({ workflowState, actionResult }: ActionStatusCardProps) {
+export default function ActionStatusCard({ workflowState, actionResult, onReset }: ActionStatusCardProps) {
   const getStatus = (step: number): 'pending' | 'active' | 'complete' | 'error' => {
     const stateMap: Record<WorkflowState, number> = {
       idle: 0,
@@ -118,6 +121,14 @@ export default function ActionStatusCard({ workflowState, actionResult }: Action
           </StatusItem>
         </div>
       </CardContent>
+       {workflowState === 'completed' && (
+        <CardFooter className="pt-6">
+          <Button onClick={onReset} className="w-full">
+            <RefreshCw />
+            Reset and Run Again
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
