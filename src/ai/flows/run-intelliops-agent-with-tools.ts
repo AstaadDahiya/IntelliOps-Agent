@@ -117,7 +117,7 @@ export async function runIntelliOpsAgentWithTools(
 
       const { output } = await ai.generate({
         prompt,
-        model: 'googleai/gemini-1.5-pro-latest',
+        model: 'googleai/gemini-flash',
         tools: [deployPatch, runDiagnosticScript, restartProcess, escalateToHuman],
         output: {
           schema: RunIntelliOpsAgentWithToolsOutputSchema,
