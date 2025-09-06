@@ -6,7 +6,8 @@ import AlertCard from '@/components/dashboard/alert-card';
 import AnalysisCard from '@/components/dashboard/analysis-card';
 import ActionStatusCard from '@/components/dashboard/action-status-card';
 import { mockAlert, type Alert } from '@/lib/data';
-import { runIntelliOpsAgent } from '@/ai/flows/run-intelliops-agent';
+import { runIntelliOpsAgentWithTools } from '@/ai/flows/run-intelliops-agent-with-tools';
+import { retrieveContextualSolutions } from '@/ai/flows/retrieve-contextual-solutions';
 
 export type WorkflowState = 'idle' | 'analyzing' | 'awaiting-approval' | 'executing' | 'completed';
 export type ActionResult = 'success' | 'failure' | 'rejected' | null;
@@ -29,9 +30,12 @@ export default function Home() {
     if (!alert) return;
     setWorkflowState('analyzing');
     try {
-      const result = await runIntelliOpsAgent({
-        alertTitle: alert.title,
-        alertDescription: alert.description,
+      const contextualSolutions = await retrieveContextualSolutions({
+        alertAnalysis: 'High CPU utilization on web-server-01',
+      });
+      const result = await runIntelliOpsAgentWithTools({
+        alert: alert,
+        knowledgeBaseResults: contextualSolutions.solutions,
       });
       setAnalysisResult({
         analysis: result.analysis,
