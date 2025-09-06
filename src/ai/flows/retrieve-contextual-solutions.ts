@@ -44,7 +44,8 @@ const retrieveContextualSolutionsFlow = ai.defineFlow(
     const knowledgeBase = [
         "For high CPU on web servers, first check the 'data-cruncher.py' process. If it's running, consider restarting it using 'systemctl restart data-cruncher'.",
         "If a server is unresponsive, a common solution is to run the 'network-diagnostic.sh' script to check for connectivity issues.",
-        "When 'data-cruncher.py' exceeds 90% CPU, it's a known issue that requires patch 'PATCH-CPU-001' to be deployed."
+        "When 'data-cruncher.py' exceeds 90% CPU, it's a known issue that requires patch 'PATCH-CPU-001' to be deployed.",
+        "Database connection errors are often linked to network ACLs or firewall rules. The 'network-diagnostic.sh' script can help identify blocked ports."
     ];
     
     const solutions = "### Relevant Knowledge Base Articles:\n" + knowledgeBase.join("\n\n");

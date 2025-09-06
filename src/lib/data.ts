@@ -19,3 +19,17 @@ export const mockAlert: Alert = {
   timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
   source: 'SuperOps',
 };
+
+export const mockAlerts: Alert[] = [
+  mockAlert,
+  {
+    id: 'ALT-67890',
+    assetId: 'ASSET-DB-01',
+    ticketId: 'TICK-12345',
+    title: 'Database Connection Errors',
+    description: 'The main application database "prod-db-01" is intermittently refusing connections. Users are reporting errors accessing their data.',
+    severity: 'High',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    source: 'SuperOps',
+  }
+]

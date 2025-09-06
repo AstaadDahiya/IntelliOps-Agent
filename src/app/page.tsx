@@ -5,9 +5,19 @@ import Header from '@/components/layout/header';
 import AlertCard from '@/components/dashboard/alert-card';
 import AnalysisCard from '@/components/dashboard/analysis-card';
 import ActionStatusCard from '@/components/dashboard/action-status-card';
-import { mockAlert, type Alert } from '@/lib/data';
-import { runIntelliOpsAgent } from '@/ai/flows/run-intelliops-agent';
+import { mockAlerts, type Alert } from '@/lib/data';
+import { runIntelliOpsAgentWithTools } from '@/ai/flows/run-intelliops-agent-with-tools';
 import { useToast } from '@/hooks/use-toast';
+import { retrieveContextualSolutions } from '@/ai/flows/retrieve-contextual-solutions';
+import { executeSuperOpsAction } from '@/services/superops';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from '@/components/ui/label';
 
 export type WorkflowState = 'idle' | 'analyzing' | 'awaiting-approval' | 'executing' | 'completed';
 export type ActionResult = 'success' | 'failure' | 'rejected' | null;
@@ -22,25 +32,29 @@ export default function Home() {
 
   useEffect(() => {
     setIsClient(true);
-    const timer = setTimeout(() => {
-      setAlert(mockAlert);
-      setWorkflowState('idle')
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!alert) {
+      setAlert(mockAlerts[0]);
+    }
+  }, [alert]);
 
   const handleAnalyze = async () => {
     if (!alert) return;
     setWorkflowState('analyzing');
     try {
-      const result = await runIntelliOpsAgent({
-        alertTitle: alert.title,
-        alertDescription: alert.description,
+      const contextualSolutions = await retrieveContextualSolutions({
+        alertAnalysis: `${alert.title} ${alert.description}`,
       });
+
+      const result = await runIntelliOpsAgentWithTools({
+        alert,
+        knowledgeBaseResults: contextualSolutions.solutions,
+      });
+
       setAnalysisResult({
         analysis: result.analysis,
         suggestedAction: result.suggestedAction,
         reasoning: result.reasoning,
+        // The payload is now part of the tool call, not the initial analysis
       });
       setWorkflowState('awaiting-approval');
     } catch (error) {
@@ -55,11 +69,42 @@ export default function Home() {
   };
 
   const handleApprove = async () => {
+    if (!analysisResult || !alert) return;
     setWorkflowState('executing');
-    // This is a placeholder for the actual API call
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    const success = Math.random() > 0.2; // Simulate success/failure
-    setActionResult(success ? 'success' : 'failure');
+
+    try {
+      // Here we would get the full tool call details from the agent's turn
+      // For this simulation, we'll derive it from the suggested action.
+      // In a real scenario, the agent would return a structured tool call.
+      const action = analysisResult.suggestedAction;
+      let payload: any = { details: analysisResult.reasoning };
+
+      if (action === 'runDiagnosticScript') {
+        payload.scriptName = 'network-diagnostic.sh';
+      } else if (action === 'restartProcess') {
+        payload.processName = 'data-cruncher.py';
+      } else if (action === 'deployPatch') {
+        // Example patch name, this would come from the agent
+        payload.patchName = 'PATCH-CPU-001';
+      }
+
+
+      const toolResponse = await executeSuperOpsAction({
+        action: action,
+        justification: analysisResult.reasoning,
+        payload: payload,
+      }, alert);
+
+      console.log('SuperOps Action Result:', toolResponse);
+
+      // Simulate success/failure based on response
+      const success = !toolResponse.toLowerCase().includes('failed');
+      setActionResult(success ? 'success' : 'failure');
+    } catch (error) {
+       console.error('Error executing action:', error);
+       setActionResult('failure');
+    }
+
     setWorkflowState('completed');
   };
 
@@ -69,14 +114,21 @@ export default function Home() {
   };
   
   const handleReset = () => {
-    setAlert(null);
+    const currentAlertIndex = mockAlerts.findIndex(a => a.id === alert?.id);
+    setAlert(mockAlerts[currentAlertIndex] || mockAlerts[0]);
     setAnalysisResult(null);
     setActionResult(null);
     setWorkflowState('idle');
-    const timer = setTimeout(() => {
-      setAlert(mockAlert);
-    }, 1000);
-    return () => clearTimeout(timer);
+  }
+
+  const handleAlertChange = (alertId: string) => {
+    const newAlert = mockAlerts.find(a => a.id === alertId);
+    if (newAlert) {
+      setAlert(newAlert);
+      setAnalysisResult(null);
+      setActionResult(null);
+      setWorkflowState('idle');
+    }
   }
 
   if (!isClient) {
@@ -89,6 +141,21 @@ export default function Home() {
       <main className="flex-1 p-4 sm:p-6 md:p-8">
         <div className="mx-auto grid max-w-7xl items-start gap-8 lg:grid-cols-3">
           <div className="grid gap-8 lg:col-span-2">
+            <div className='flex justify-end'>
+              <div className="grid w-full max-w-sm items-center gap-1.5">
+                <Label htmlFor="alert-selector">Select a Scenario</Label>
+                <Select onValueChange={handleAlertChange} defaultValue={alert?.id}>
+                  <SelectTrigger id="alert-selector" className="w-full">
+                    <SelectValue placeholder="Select an alert scenario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockAlerts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <AlertCard 
               alert={alert}
               onAnalyze={handleAnalyze}
